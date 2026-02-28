@@ -77,7 +77,7 @@ pub mod tools;
 pub(crate) mod tunnel;
 pub mod update;
 pub(crate) mod util;
-
+pub mod worker;
 pub use config::Config;
 
 /// Service management subcommands

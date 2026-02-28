@@ -37,3 +37,6 @@ credentials.json
 
 # Nix
 result
+
+# Exclude Gemini data
+.gemini/

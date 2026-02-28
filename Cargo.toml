@@ -111,7 +111,7 @@ prost = { version = "0.14", default-features = false, features = ["derive"], opt
 rusqlite = { version = "0.37", features = ["bundled"] }
 postgres = { version = "0.19", features = ["with-chrono-0_4"], optional = true }
 tokio-postgres-rustls = { version = "0.12", optional = true }
-chrono = { version = "0.4", default-features = false, features = ["clock", "std", "serde"] }
+chrono = { version = "0.4.34", default-features = false, features = ["clock", "std", "serde"] }
 chrono-tz = "0.10"
 cron = "0.15"
 
@@ -130,7 +130,7 @@ which = "8.0"
 tempfile = "3.14"
 
 # WebSocket client channels (Discord/Lark/DingTalk/Nostr)
-tokio-tungstenite = { version = "0.28", features = ["rustls-tls-webpki-roots"] }
+tokio-tungstenite = { version = "0.28", features = ["rustls-tls-native-roots", "rustls-tls-webpki-roots"] }
 futures-util = { version = "0.3", default-features = false, features = ["sink"] }
 nostr-sdk = { version = "0.44", default-features = false, features = ["nip04", "nip59"] }
 regex = "1.10"
@@ -165,6 +165,7 @@ opentelemetry-otlp = { version = "0.31", default-features = false, features = ["
 
 # Serial port for peripheral communication (STM32, etc.)
 tokio-serial = { version = "5", default-features = false, optional = true }
+ed25519-dalek = { version = "2.2.0", features = ["rand_core"] }
 
 # USB device enumeration (hardware discovery) — only on platforms nusb supports
 # (Linux, macOS, Windows). Android/Termux uses target_os="android" and is excluded.
@@ -207,7 +208,7 @@ libc = "0.2"
 [features]
 # Default enables wasm-tools where platform runtime dependencies are available.
 # Unsupported targets (for example Android/Termux) use a stub implementation.
-default = ["wasm-tools"]
+default = ["wasm-tools", "firecrawl"]
 hardware = ["nusb", "tokio-serial"]
 channel-matrix = ["dep:matrix-sdk"]
 channel-lark = ["dep:prost"]
@@ -234,6 +235,8 @@ rag-pdf = ["dep:pdf-extract"]
 wasm-tools = ["dep:wasmtime", "dep:wasmtime-wasi"]
 # whatsapp-web = Native WhatsApp Web client with custom rusqlite storage backend
 whatsapp-web = ["dep:wa-rs", "dep:wa-rs-core", "dep:wa-rs-binary", "dep:wa-rs-proto", "dep:wa-rs-ureq-http", "dep:wa-rs-tokio-transport", "dep:serde-big-array", "dep:prost", "dep:qrcode"]
+# firecrawl = Native Firecrawl fetching/searching support.
+firecrawl = []
 
 [profile.release]
 opt-level = "z"      # Optimize for size

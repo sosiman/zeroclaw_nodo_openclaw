@@ -1,0 +1,236 @@
+﻿cargo :     Checking zeroclaw v0.1.7 (C:\Users\codex\Desktop\ssh\Zeroclaw\zeroclaw)
+En línea: 1 Carácter: 1
++ cargo check > check.log 2>&1
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (    Checking ze...oclaw\zeroclaw):String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+warning: unexpected `cfg` condition value: `firecrawl`
+   --> src\tools\web_fetch.rs:224:11
+    |
+224 |     #[cfg(feature = "firecrawl")]
+    |           ^^^^^^^^^^^^^^^^^^^^^
+    |
+    = note: expected values for `feature` are: `browser-native`, `channel-lark`, `channel-matrix`, `default`, `fantoccini`, `hardware`, 
+`landlock`, `memory-postgres`, `nusb`, `observability-otel`, `peripheral-rpi`, `probe`, `rag-pdf`, `rppal`, `runtime-wasm`, 
+`sandbox-bubblewrap`, `sandbox-landlock`, `tokio-serial`, `wasm-tools`, and `whatsapp-web`
+    = help: consider adding `firecrawl` as a feature in `Cargo.toml`
+    = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional 
+configuration
+    = note: `#[warn(unexpected_cfgs)]` on by default
+
+warning: unexpected `cfg` condition value: `firecrawl`
+   --> src\tools\web_fetch.rs:298:15
+    |
+298 |     #[cfg(not(feature = "firecrawl"))]
+    |               ^^^^^^^^^^^^^^^^^^^^^
+    |
+    = note: expected values for `feature` are: `browser-native`, `channel-lark`, `channel-matrix`, `default`, `fantoccini`, `hardware`, 
+`landlock`, `memory-postgres`, `nusb`, `observability-otel`, `peripheral-rpi`, `probe`, `rag-pdf`, `rppal`, `runtime-wasm`, 
+`sandbox-bubblewrap`, `sandbox-landlock`, `tokio-serial`, `wasm-tools`, and `whatsapp-web`
+    = help: consider adding `firecrawl` as a feature in `Cargo.toml`
+    = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional 
+configuration
+
+warning: unexpected `cfg` condition value: `web-fetch-html2md`
+   --> src\tools\web_fetch.rs:128:23
+    |
+128 |                 #[cfg(feature = "web-fetch-html2md")]
+    |                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = note: expected values for `feature` are: `browser-native`, `channel-lark`, `channel-matrix`, `default`, `fantoccini`, `hardware`, 
+`landlock`, `memory-postgres`, `nusb`, `observability-otel`, `peripheral-rpi`, `probe`, `rag-pdf`, `rppal`, `runtime-wasm`, 
+`sandbox-bubblewrap`, `sandbox-landlock`, `tokio-serial`, `wasm-tools`, and `whatsapp-web`
+    = help: consider adding `web-fetch-html2md` as a feature in `Cargo.toml`
+    = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional 
+configuration
+
+warning: unexpected `cfg` condition value: `web-fetch-html2md`
+   --> src\tools\web_fetch.rs:132:27
+    |
+132 |                 #[cfg(not(feature = "web-fetch-html2md"))]
+    |                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = note: expected values for `feature` are: `browser-native`, `channel-lark`, `channel-matrix`, `default`, `fantoccini`, `hardware`, 
+`landlock`, `memory-postgres`, `nusb`, `observability-otel`, `peripheral-rpi`, `probe`, `rag-pdf`, `rppal`, `runtime-wasm`, 
+`sandbox-bubblewrap`, `sandbox-landlock`, `tokio-serial`, `wasm-tools`, and `whatsapp-web`
+    = help: consider adding `web-fetch-html2md` as a feature in `Cargo.toml`
+    = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional 
+configuration
+
+warning: unexpected `cfg` condition value: `web-fetch-plaintext`
+   --> src\tools\web_fetch.rs:140:23
+    |
+140 |                 #[cfg(feature = "web-fetch-plaintext")]
+    |                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = note: expected values for `feature` are: `browser-native`, `channel-lark`, `channel-matrix`, `default`, `fantoccini`, `hardware`, 
+`landlock`, `memory-postgres`, `nusb`, `observability-otel`, `peripheral-rpi`, `probe`, `rag-pdf`, `rppal`, `runtime-wasm`, 
+`sandbox-bubblewrap`, `sandbox-landlock`, `tokio-serial`, `wasm-tools`, and `whatsapp-web`
+    = help: consider adding `web-fetch-plaintext` as a feature in `Cargo.toml`
+    = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional 
+configuration
+
+warning: unexpected `cfg` condition value: `web-fetch-plaintext`
+   --> src\tools\web_fetch.rs:144:27
+    |
+144 |                 #[cfg(not(feature = "web-fetch-plaintext"))]
+    |                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = note: expected values for `feature` are: `browser-native`, `channel-lark`, `channel-matrix`, `default`, `fantoccini`, `hardware`, 
+`landlock`, `memory-postgres`, `nusb`, `observability-otel`, `peripheral-rpi`, `probe`, `rag-pdf`, `rppal`, `runtime-wasm`, 
+`sandbox-bubblewrap`, `sandbox-landlock`, `tokio-serial`, `wasm-tools`, and `whatsapp-web`
+    = help: consider adding `web-fetch-plaintext` as a feature in `Cargo.toml`
+    = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional 
+configuration
+
+warning: unexpected `cfg` condition value: `firecrawl`
+   --> src\tools\web_search_tool.rs:377:11
+    |
+377 |     #[cfg(feature = "firecrawl")]
+    |           ^^^^^^^^^^^^^^^^^^^^^
+    |
+    = note: expected values for `feature` are: `browser-native`, `channel-lark`, `channel-matrix`, `default`, `fantoccini`, `hardware`, 
+`landlock`, `memory-postgres`, `nusb`, `observability-otel`, `peripheral-rpi`, `probe`, `rag-pdf`, `rppal`, `runtime-wasm`, 
+`sandbox-bubblewrap`, `sandbox-landlock`, `tokio-serial`, `wasm-tools`, and `whatsapp-web`
+    = help: consider adding `firecrawl` as a feature in `Cargo.toml`
+    = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional 
+configuration
+
+warning: unexpected `cfg` condition value: `firecrawl`
+   --> src\tools\web_search_tool.rs:471:15
+    |
+471 |     #[cfg(not(feature = "firecrawl"))]
+    |               ^^^^^^^^^^^^^^^^^^^^^
+    |
+    = note: expected values for `feature` are: `browser-native`, `channel-lark`, `channel-matrix`, `default`, `fantoccini`, `hardware`, 
+`landlock`, `memory-postgres`, `nusb`, `observability-otel`, `peripheral-rpi`, `probe`, `rag-pdf`, `rppal`, `runtime-wasm`, 
+`sandbox-bubblewrap`, `sandbox-landlock`, `tokio-serial`, `wasm-tools`, and `whatsapp-web`
+    = help: consider adding `firecrawl` as a feature in `Cargo.toml`
+    = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional 
+configuration
+
+warning: unused import: `Path`
+ --> src\worker\sandbox.rs:3:17
+  |
+3 | use std::path::{Path, PathBuf};
+  |                 ^^^^
+  |
+  = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused imports: `ConnectDevice`, `ConnectParams`, and `GatewayClient`
+ --> src\worker\ws_client.rs:9:31
+  |
+9 | use crate::worker::protocol::{GatewayClient, ConnectDevice, ConnectParams, PROTOCOL_VERSION};
+  |                               ^^^^^^^^^^^^^  ^^^^^^^^^^^^^  ^^^^^^^^^^^^^
+
+warning: use of deprecated function `base64::decode`: Use Engine::decode
+  --> src\worker\identity.rs:32:37
+   |
+32 |             let key_bytes = base64::decode(&stored.private_key_base64)?;
+   |                                     ^^^^^^
+   |
+   = note: `#[warn(deprecated)]` on by default
+
+warning: use of deprecated function `base64::encode`: Use Engine::encode
+  --> src\worker\identity.rs:48:45
+   |
+48 |             let public_key_base64 = base64::encode(verifying_key.as_bytes());
+   |                                             ^^^^^^
+
+warning: use of deprecated function `base64::encode`: Use Engine::encode
+  --> src\worker\identity.rs:66:46
+   |
+66 |             let private_key_base64 = base64::encode(signing_key.as_bytes());
+   |                                              ^^^^^^
+
+warning: use of deprecated function `base64::encode`: Use Engine::encode
+  --> src\worker\identity.rs:92:17
+   |
+92 |         base64::encode(verifying_key.as_bytes())
+   |                 ^^^^^^
+
+warning: use of deprecated function `base64::encode`: Use Engine::encode
+  --> src\worker\identity.rs:98:17
+   |
+98 |         base64::encode(signature.to_bytes())
+   |                 ^^^^^^
+
+warning: use of deprecated function `base64::encode`: Use Engine::encode
+   --> src\worker\identity.rs:104:17
+    |
+104 |         base64::encode(signature.to_bytes())
+    |                 ^^^^^^
+
+error[E0267]: `continue` inside `async` function
+   --> src\worker\ws_client.rs:175:21
+    |
+ 96 | /     async fn handle_message(
+ 97 | |         &self,
+ 98 | |         text: &str,
+ 99 | |         ws_stream: &mut tokio_tungstenite::WebSocketStream<tokio_tungstenite::MaybeTlsStream<tokio::net::TcpStream>>,
+100 | |     ) -> Result<()> {
+    | |___________________- enclosing `async` function
+...
+175 |                       continue;
+    |                       ^^^^^^^^ cannot `continue` inside `async` function
+
+error[E0277]: `(std::result::Result<ExitStatus, std::io::Error>, ())` is not a future
+   --> src\worker\ws_client.rs:227:66
+    |
+227 |                         match tokio::time::timeout(max_duration, tokio::join!(child.wait(), read_task)).await {
+    |                               --------------------               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `(std::result::Result<ExitStatus, 
+std::io::Error>, ())` is not a future
+    |                               |
+    |                               required by a bound introduced by this call
+    |
+    = help: the trait `futures_util::Future` is not implemented for `(std::result::Result<ExitStatus, std::io::Error>, ())`
+    = note: (std::result::Result<ExitStatus, std::io::Error>, ()) must be a future or must implement `IntoFuture` to be awaited
+    = note: required for `(std::result::Result<ExitStatus, std::io::Error>, ())` to implement `std::future::IntoFuture`
+note: required by a bound in `tokio::time::timeout`
+   --> C:\Users\codex\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\tokio-1.49.0\src\time\timeout.rs:88:8
+    |
+ 86 | pub fn timeout<F>(duration: Duration, future: F) -> Timeout<F::IntoFuture>
+    |        ------- required by a bound in this function
+ 87 | where
+ 88 |     F: IntoFuture,
+    |        ^^^^^^^^^^ required by this bound in `timeout`
+
+error[E0277]: `(std::result::Result<ExitStatus, std::io::Error>, ())` is not a future
+   --> src\worker\ws_client.rs:227:105
+    |
+227 |                         match tokio::time::timeout(max_duration, tokio::join!(child.wait(), read_task)).await {
+    |                               ------------------------------------------------------------------------- ^^^^^ 
+`(std::result::Result<ExitStatus, std::io::Error>, ())` is not a future
+    |                               |
+    |                               this call returns `(std::result::Result<ExitStatus, std::io::Error>, ())`
+    |
+    = help: the trait `futures_util::Future` is not implemented for `(std::result::Result<ExitStatus, std::io::Error>, ())`
+    = note: required for `tokio::time::Timeout<(std::result::Result<ExitStatus, std::io::Error>, ())>` to implement `futures_util::Future`
+    = note: required for `tokio::time::Timeout<(std::result::Result<ExitStatus, std::io::Error>, ())>` to implement `std::future::IntoFuture`
+help: remove the `.await`
+    |
+227 -                         match tokio::time::timeout(max_duration, tokio::join!(child.wait(), read_task)).await {
+227 +                         match tokio::time::timeout(max_duration, tokio::join!(child.wait(), read_task)) {
+    |
+
+error[E0282]: type annotations needed
+   --> src\worker\ws_client.rs:233:49
+    |
+233 | ...                   "exitCode": status.code().unwrap_or(-1)
+    |                                   ^^^^^^ cannot infer type
+
+error[E0277]: `(std::result::Result<ExitStatus, std::io::Error>, ())` is not a future
+   --> src\worker\ws_client.rs:227:31
+    |
+227 |                         match tokio::time::timeout(max_duration, tokio::join!(child.wait(), read_task)).await {
+    |                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+`(std::result::Result<ExitStatus, std::io::Error>, ())` is not a future
+    |
+    = help: the trait `futures_util::Future` is not implemented for `(std::result::Result<ExitStatus, std::io::Error>, ())`
+    = note: required for `(std::result::Result<ExitStatus, std::io::Error>, ())` to implement `std::future::IntoFuture`
+
+Some errors have detailed explanations: E0267, E0277, E0282.
+For more information about an error, try `rustc --explain E0267`.
+warning: `zeroclaw` (lib) generated 16 warnings
+error: could not compile `zeroclaw` (lib) due to 5 previous errors; 16 warnings emitted

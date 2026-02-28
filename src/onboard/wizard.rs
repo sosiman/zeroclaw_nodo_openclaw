@@ -3325,7 +3325,6 @@ fn setup_web_tools() -> Result<(WebSearchConfig, WebFetchConfig, HttpRequestConf
         let provider_options = vec![
             "DuckDuckGo (free, no API key)",
             "Brave Search (requires API key)",
-            #[cfg(feature = "firecrawl")]
             "Firecrawl (requires API key + firecrawl feature)",
         ];
         let provider_choice = Select::new()
@@ -3344,7 +3343,6 @@ fn setup_web_tools() -> Result<(WebSearchConfig, WebFetchConfig, HttpRequestConf
                     web_search_config.brave_api_key = Some(key.trim().to_string());
                 }
             }
-            #[cfg(feature = "firecrawl")]
             2 => {
                 web_search_config.provider = "firecrawl".to_string();
                 let key: String = Input::new()
@@ -3396,7 +3394,6 @@ fn setup_web_tools() -> Result<(WebSearchConfig, WebFetchConfig, HttpRequestConf
         let provider_options = vec![
             "fast_html2md (local HTML-to-Markdown, default)",
             "nanohtml2text (local HTML-to-plaintext, lighter)",
-            #[cfg(feature = "firecrawl")]
             "firecrawl (cloud conversion, requires API key)",
         ];
         let provider_choice = Select::new()
@@ -3409,7 +3406,6 @@ fn setup_web_tools() -> Result<(WebSearchConfig, WebFetchConfig, HttpRequestConf
             1 => {
                 web_fetch_config.provider = "nanohtml2text".to_string();
             }
-            #[cfg(feature = "firecrawl")]
             2 => {
                 web_fetch_config.provider = "firecrawl".to_string();
                 let key: String = Input::new()

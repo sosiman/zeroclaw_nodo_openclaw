@@ -86,7 +86,7 @@ mod tools;
 mod tunnel;
 mod update;
 mod util;
-
+mod worker;
 use config::Config;
 
 // Re-export so binary modules can use crate::<CommandEnum> while keeping a single source of truth.
@@ -228,6 +228,21 @@ Examples:
         /// Memory backend (sqlite, markdown, none)
         #[arg(long)]
         memory_backend: Option<String>,
+    },
+
+    /// Run as an OpenClaw worker node
+    #[command(long_about = "\
+Run as an OpenClaw worker node.
+
+Connects to a central OpenClaw Hub via WebSocket to receive and execute tasks \
+securely in a sandbox.
+
+Examples:
+  zeroclaw node --hub ws://192.168.0.50:18789")]
+    Node {
+        /// Hub WebSocket URL (e.g. ws://192.168.0.50:18789)
+        #[arg(long)]
+        hub: String,
     },
 
     /// Start the gateway server (webhooks, websockets)
@@ -839,6 +854,11 @@ async fn main() -> Result<()> {
 
     match cli.command {
         Commands::Onboard { .. } | Commands::Completions { .. } => unreachable!(),
+
+        Commands::Node { hub } => {
+            crate::worker::run_node(&hub, &config).await?;
+            Ok(())
+        }
 
         Commands::Agent {
             message,
