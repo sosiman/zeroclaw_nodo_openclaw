@@ -150,6 +150,8 @@ impl WsClient {
 
             let signature = identity.sign_payload(payload_string.as_bytes());
 
+            let auth_token = std::env::var("OPENCLAW_GATEWAY_TOKEN").unwrap_or_default();
+
             let connect_req = json!({
                 "type": "req",
                 "method": "connect",
@@ -157,6 +159,9 @@ impl WsClient {
                 "params": {
                     "minProtocol": PROTOCOL_VERSION,
                     "maxProtocol": PROTOCOL_VERSION,
+                    "auth": {
+                        "token": auth_token
+                    },
                     "client": {
                         "id": "node-host",
                         "version": env!("CARGO_PKG_VERSION"),
