@@ -140,17 +140,18 @@ impl WsClient {
                 .unwrap()
                 .as_millis() as u64;
 
+            let auth_token = std::env::var("OPENCLAW_GATEWAY_TOKEN").unwrap_or_default();
+
             // Generate signature for "v2|device_id|client_id|mode|role|scopes|signed_at|token|nonce"
             let payload_string = format!(
-                "v2|{}|node-host|node|node||{}||{}",
+                "v2|{}|node-host|node|node||{}|{}|{}",
                 identity.node_id,
                 signed_at_ms,
+                auth_token,
                 nonce
             );
 
             let signature = identity.sign_payload(payload_string.as_bytes());
-
-            let auth_token = std::env::var("OPENCLAW_GATEWAY_TOKEN").unwrap_or_default();
 
             let connect_req = json!({
                 "type": "req",
