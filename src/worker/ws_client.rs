@@ -111,6 +111,10 @@ impl WsClient {
                     ws_stream.send(msg).await?;
                 }
                 _ = ping_interval.tick() => {
+                    // Maintenance: prune finished jobs older than 24h
+                    let cutoff = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs().saturating_sub(24 * 60 * 60);
+                    let _ = self.store.prune_finished_older_than(cutoff);
+
                     // Send a standard WebSocket ping heartbeat
                     ws_stream.send(Message::Ping(vec![].into())).await?;
                 }
@@ -226,13 +230,41 @@ impl WsClient {
                         .unwrap_or_default();
                     let async_mode = parsed["async"].as_bool().unwrap_or(true);
                     let timeout_ms = parsed["commandTimeoutMs"].as_u64();
+                    let requested_op = parsed["op"].as_str().or(parsed["action"].as_str()).unwrap_or("");
+                    let requested_job_id = parsed["jobId"].as_str().unwrap_or("");
 
-                    if argv.is_empty() {
+                    // Fase 2: permitir status/result también por system.run (compat con gateways que filtran comandos)
+                    if (requested_op == "status" || requested_op == "result") && !requested_job_id.is_empty() {
+                        match self.store.get_job(requested_job_id) {
+                            Ok(Some(job)) => {
+                                ok = true;
+                                payload_json = Some(json!({
+                                    "jobId": requested_job_id,
+                                    "status": job.status,
+                                    "exitCode": job.exit_code,
+                                    "stdout": job.stdout,
+                                    "stderr": job.stderr,
+                                    "startedAt": job.started_at,
+                                    "endedAt": job.ended_at
+                                }));
+                            }
+                            Ok(None) => {
+                                error_json = Some(json!({"code":"NOT_FOUND","message":"job not found"}));
+                            }
+                            Err(e) => {
+                                error_json = Some(json!({"code":"STORE_ERROR","message": e.to_string()}));
+                            }
+                        }
+                    } else if argv.is_empty() {
                         error_json = Some(json!({"code":"INVALID_REQUEST","message":"command required"}));
                     } else {
                         let bin = argv[0].clone();
                         let args = argv[1..].to_vec();
-                        let job_id = payload["idempotencyKey"].as_str().unwrap_or(&invoke_id).to_string();
+                        let job_id = parsed["idempotencyKey"]
+                            .as_str()
+                            .or(payload["idempotencyKey"].as_str())
+                            .unwrap_or(&invoke_id)
+                            .to_string();
 
                         if let Ok(Some(existing)) = self.store.get_job(&job_id) {
                             ok = true;
@@ -255,6 +287,39 @@ impl WsClient {
                                     let job_id_clone = job_id.clone();
                                     let bin_clone = bin.clone();
                                     let args_clone = args.clone();
+
+                                    // heartbeat/progreso periódico mientras el job esté running
+                                    let store_hb = Arc::clone(&self.store);
+                                    let tx_hb = tx.clone();
+                                    let node_id_hb = node_id.clone();
+                                    let job_id_hb = job_id.clone();
+                                    tokio::spawn(async move {
+                                        let mut interval = tokio::time::interval(Duration::from_secs(10));
+                                        loop {
+                                            interval.tick().await;
+                                            let still_running = match store_hb.get_job(&job_id_hb) {
+                                                Ok(Some(j)) => j.status == "running",
+                                                _ => false,
+                                            };
+                                            if !still_running {
+                                                break;
+                                            }
+                                            let ev = json!({
+                                                "type": "req",
+                                                "id": uuid::Uuid::new_v4().to_string(),
+                                                "method": "node.event",
+                                                "params": {
+                                                    "event": "job.progress",
+                                                    "payloadJSON": json!({
+                                                        "nodeId": node_id_hb,
+                                                        "jobId": job_id_hb,
+                                                        "status": "running"
+                                                    }).to_string()
+                                                }
+                                            });
+                                            let _ = tx_hb.send(Message::Text(ev.to_string().into()));
+                                        }
+                                    });
 
                                     tokio::spawn(async move {
                                         let mut cmd = tokio::process::Command::new(&bin_clone);

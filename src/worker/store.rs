@@ -105,4 +105,14 @@ impl JobStore {
             Ok(None)
         }
     }
+
+    pub fn prune_finished_older_than(&self, cutoff_unix_secs: u64) -> Result<usize> {
+        let conn = self.conn.lock().unwrap();
+        let changed = conn.execute(
+            "DELETE FROM jobs WHERE ended_at IS NOT NULL AND ended_at < ?1",
+            params![cutoff_unix_secs as i64],
+        )?;
+        Ok(changed)
+    }
 }
+
