@@ -20,6 +20,24 @@ Se creará un nuevo subcomando `zeroclaw node --hub ws://[ip]:[puerto]` que leva
 - **Declaración:** Enviar payload con `role: "node"`.
 - **Anuncio de Capabilities:** Declarar lo que el nodo puede hacer (`can_run`, `can_invoke`, `sandbox_profile_default`, memory limits).
 
+#### Nota operativa crítica (validada en entorno real)
+Para nodos WS de OpenClaw, el flujo correcto de aprobación es **devices pairing**, no `nodes approve`.
+
+Flujo exacto que funcionó:
+1. ZeroClaw conecta por WS al Hub (`ws://192.168.0.50:18789`).
+2. En `connect` envía:
+   - `role: "node"`
+   - firma válida del `connect.challenge`
+   - token de gateway válido
+3. El Hub crea la solicitud en **devices** (no en **nodes**).
+4. Aprobar con:
+   - `openclaw devices approve <requestId>`
+5. Verificar con:
+   - `openclaw devices list`
+   - Debe aparecer en `Paired` con rol `node` (ejemplo validado: IP `192.168.0.248`).
+
+**Clave:** `openclaw nodes approve` no desbloquea el handshake WS; el gating real para nodos WS es `openclaw devices approve`.
+
 ### 3. RPC Básico & Idempotencia
 - **`nodes.run`:** Recibir un comando simple y devolver una **respuesta compatible real** (status alineado, stdout, stderr, y `exit_code`). Nada de "dummy responses".
 - **`nodes.invoke`:** Manejar una llamada estructurada devolviendo un frame `res` correctamente empaquetado.
