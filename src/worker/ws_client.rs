@@ -181,6 +181,8 @@ impl WsClient {
                     "caps": ["can_run", "can_invoke", "system", "sandbox_profile_full"],
                     "commands": [
                         "system.run",
+                        "system.run.status",
+                        "system.run.result",
                         "system.which",
                         "system.execApprovals.get",
                         "system.execApprovals.set"
@@ -222,34 +224,167 @@ impl WsClient {
                         .as_array()
                         .map(|a| a.iter().filter_map(|i| i.as_str().map(String::from)).collect())
                         .unwrap_or_default();
+                    let async_mode = parsed["async"].as_bool().unwrap_or(true);
+                    let timeout_ms = parsed["commandTimeoutMs"].as_u64();
 
                     if argv.is_empty() {
                         error_json = Some(json!({"code":"INVALID_REQUEST","message":"command required"}));
                     } else {
                         let bin = argv[0].clone();
                         let args = argv[1..].to_vec();
+                        let job_id = payload["idempotencyKey"].as_str().unwrap_or(&invoke_id).to_string();
 
-                        match self.sandbox.validate_command(&bin) {
-                            Ok(_) => {
-                                let output = std::process::Command::new(&bin).args(&args).output();
-                                match output {
-                                    Ok(out) => {
-                                        let exit_code = out.status.code().unwrap_or(-1);
-                                        ok = exit_code == 0;
+                        if let Ok(Some(existing)) = self.store.get_job(&job_id) {
+                            ok = true;
+                            payload_json = Some(json!({
+                                "jobId": job_id,
+                                "status": existing.status,
+                                "exitCode": existing.exit_code,
+                                "stdout": existing.stdout,
+                                "stderr": existing.stderr
+                            }));
+                        } else {
+                            match self.sandbox.validate_command(&bin) {
+                                Ok(_) => {
+                                    let started_at = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs();
+                                    let _ = self.store.insert_job(&job_id, &bin, &serde_json::to_string(&args).unwrap_or_default(), started_at);
+
+                                    let store = Arc::clone(&self.store);
+                                    let tx_clone = tx.clone();
+                                    let node_id_clone = node_id.clone();
+                                    let job_id_clone = job_id.clone();
+                                    let bin_clone = bin.clone();
+                                    let args_clone = args.clone();
+
+                                    tokio::spawn(async move {
+                                        let mut cmd = tokio::process::Command::new(&bin_clone);
+                                        cmd.args(&args_clone);
+
+                                        let run_fut = cmd.output();
+                                        let output_res = if let Some(ms) = timeout_ms {
+                                            match tokio::time::timeout(Duration::from_millis(ms), run_fut).await {
+                                                Ok(res) => res,
+                                                Err(_) => {
+                                                    let ended_at = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs();
+                                                    let _ = store.update_job_error(&job_id_clone, ended_at, "command timeout");
+
+                                                    let ev = json!({
+                                                        "type": "req",
+                                                        "id": uuid::Uuid::new_v4().to_string(),
+                                                        "method": "node.event",
+                                                        "params": {
+                                                            "event": "job.completed",
+                                                            "payloadJSON": json!({
+                                                                "jobId": job_id_clone,
+                                                                "status": "error",
+                                                                "error": "timeout"
+                                                            }).to_string()
+                                                        }
+                                                    });
+                                                    let _ = tx_clone.send(Message::Text(ev.to_string().into()));
+                                                    return;
+                                                }
+                                            }
+                                        } else {
+                                            run_fut.await
+                                        };
+
+                                        match output_res {
+                                            Ok(out) => {
+                                                let exit_code = out.status.code().unwrap_or(-1);
+                                                let ended_at = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs();
+                                                let stdout = String::from_utf8_lossy(&out.stdout).to_string();
+                                                let stderr = String::from_utf8_lossy(&out.stderr).to_string();
+
+                                                if exit_code == 0 {
+                                                    let _ = store.update_job_success(&job_id_clone, ended_at, exit_code, &stdout, &stderr);
+                                                } else {
+                                                    let _ = store.update_job_error(&job_id_clone, ended_at, &stderr);
+                                                }
+
+                                                let ev = json!({
+                                                    "type": "req",
+                                                    "id": uuid::Uuid::new_v4().to_string(),
+                                                    "method": "node.event",
+                                                    "params": {
+                                                        "event": "job.completed",
+                                                        "payloadJSON": json!({
+                                                            "nodeId": node_id_clone,
+                                                            "jobId": job_id_clone,
+                                                            "status": if exit_code == 0 { "success" } else { "error" },
+                                                            "exitCode": exit_code
+                                                        }).to_string()
+                                                    }
+                                                });
+                                                let _ = tx_clone.send(Message::Text(ev.to_string().into()));
+                                            }
+                                            Err(e) => {
+                                                let ended_at = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs();
+                                                let _ = store.update_job_error(&job_id_clone, ended_at, &e.to_string());
+                                            }
+                                        }
+                                    });
+
+                                    if async_mode {
+                                        ok = true;
                                         payload_json = Some(json!({
-                                            "status": if ok { "success" } else { "error" },
-                                            "stdout": String::from_utf8_lossy(&out.stdout).to_string(),
-                                            "stderr": String::from_utf8_lossy(&out.stderr).to_string(),
-                                            "exitCode": exit_code
+                                            "accepted": true,
+                                            "jobId": job_id,
+                                            "status": "running"
                                         }));
-                                    }
-                                    Err(e) => {
-                                        error_json = Some(json!({"code":"SYSTEM_RUN_FAILED","message": e.to_string()}));
+                                    } else {
+                                        // compat mode: caller expects immediate result
+                                        tokio::time::sleep(Duration::from_millis(200)).await;
+                                        if let Ok(Some(done)) = self.store.get_job(&job_id) {
+                                            ok = done.status == "success";
+                                            payload_json = Some(json!({
+                                                "jobId": job_id,
+                                                "status": done.status,
+                                                "exitCode": done.exit_code,
+                                                "stdout": done.stdout,
+                                                "stderr": done.stderr
+                                            }));
+                                        } else {
+                                            ok = true;
+                                            payload_json = Some(json!({"accepted": true, "jobId": job_id, "status": "running"}));
+                                        }
                                     }
                                 }
+                                Err(e) => {
+                                    error_json = Some(json!({"code":"SYSTEM_RUN_DENIED","message": e.to_string()}));
+                                }
+                            }
+                        }
+                    }
+                }
+                "system.run.status" | "system.run.result" => {
+                    let parsed = params_json
+                        .as_ref()
+                        .and_then(|s| serde_json::from_str::<serde_json::Value>(s).ok())
+                        .unwrap_or_else(|| json!({}));
+                    let job_id = parsed["jobId"].as_str().unwrap_or("").to_string();
+
+                    if job_id.is_empty() {
+                        error_json = Some(json!({"code":"INVALID_REQUEST","message":"jobId required"}));
+                    } else {
+                        match self.store.get_job(&job_id) {
+                            Ok(Some(job)) => {
+                                ok = true;
+                                payload_json = Some(json!({
+                                    "jobId": job_id,
+                                    "status": job.status,
+                                    "exitCode": job.exit_code,
+                                    "stdout": job.stdout,
+                                    "stderr": job.stderr,
+                                    "startedAt": job.started_at,
+                                    "endedAt": job.ended_at
+                                }));
+                            }
+                            Ok(None) => {
+                                error_json = Some(json!({"code":"NOT_FOUND","message":"job not found"}));
                             }
                             Err(e) => {
-                                error_json = Some(json!({"code":"SYSTEM_RUN_DENIED","message": e.to_string()}));
+                                error_json = Some(json!({"code":"STORE_ERROR","message": e.to_string()}));
                             }
                         }
                     }
