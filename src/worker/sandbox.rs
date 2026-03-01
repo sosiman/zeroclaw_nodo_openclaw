@@ -50,7 +50,7 @@ pub struct ExecutionConfig {
 impl Default for ExecutionConfig {
     fn default() -> Self {
         Self {
-            profile: SandboxProfile::Safe,
+            profile: SandboxProfile::Full,
             limits: GlobalLimits::default(),
             allowed_commands: vec![
                 "echo".to_string(), 

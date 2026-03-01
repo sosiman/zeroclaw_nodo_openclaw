@@ -178,7 +178,7 @@ impl WsClient {
                         "signedAt": signed_at_ms,
                         "nonce": nonce
                     },
-                    "caps": ["can_run", "can_invoke", "system", "sandbox_profile_default"],
+                    "caps": ["can_run", "can_invoke", "system", "sandbox_profile_full"],
                     "commands": [
                         "system.run",
                         "system.which",
