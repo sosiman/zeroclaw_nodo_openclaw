@@ -55,7 +55,8 @@ impl WsClient {
         loop {
             match self.connect_inner().await {
                 Ok(_) => {
-                    println!("WebSocket disconnected cleanly. Reconnecting...");
+                    println!("WebSocket disconnected cleanly. Reconnecting in 15 seconds to allow pairing...");
+                    tokio::time::sleep(Duration::from_secs(15)).await;
                     retry_count = 0; // Reset on clean disconnect if we were connected for a while
                 }
                 Err(e) => {
