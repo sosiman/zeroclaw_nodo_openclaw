@@ -178,13 +178,134 @@ impl WsClient {
                         "signedAt": signed_at_ms,
                         "nonce": nonce
                     },
-                    "caps": ["can_run", "can_invoke", "sandbox_profile_default"]
+                    "caps": ["can_run", "can_invoke", "system", "sandbox_profile_default"],
+                    "commands": [
+                        "system.run",
+                        "system.which",
+                        "system.execApprovals.get",
+                        "system.execApprovals.set"
+                    ]
                 }
             });
             drop(identity); // Release the lock
 
             let _ = tx.send(Message::Text(connect_req.to_string().into()));
             println!("Sent connect response with signature");
+        } else if v["type"] == "event" && v["event"] == "node.invoke.request" {
+            println!("Handling node.invoke.request: {}", text);
+
+            let payload = &v["payload"];
+            let invoke_id = payload["id"].as_str().unwrap_or("").to_string();
+            let node_id = payload["nodeId"].as_str().unwrap_or("").to_string();
+            let command = payload["command"].as_str().unwrap_or("").to_string();
+
+            if invoke_id.is_empty() || node_id.is_empty() || command.is_empty() {
+                return Ok(());
+            }
+
+            let params_json = payload["paramsJSON"].as_str().map(|s| s.to_string()).or_else(|| {
+                payload.get("params").map(|p| p.to_string())
+            });
+
+            let mut ok = false;
+            let mut payload_json: Option<serde_json::Value> = None;
+            let mut error_json: Option<serde_json::Value> = None;
+
+            match command.as_str() {
+                "system.run" => {
+                    let parsed = params_json
+                        .as_ref()
+                        .and_then(|s| serde_json::from_str::<serde_json::Value>(s).ok())
+                        .unwrap_or_else(|| json!({}));
+
+                    let argv: Vec<String> = parsed["command"]
+                        .as_array()
+                        .map(|a| a.iter().filter_map(|i| i.as_str().map(String::from)).collect())
+                        .unwrap_or_default();
+
+                    if argv.is_empty() {
+                        error_json = Some(json!({"code":"INVALID_REQUEST","message":"command required"}));
+                    } else {
+                        let bin = argv[0].clone();
+                        let args = argv[1..].to_vec();
+
+                        match self.sandbox.validate_command(&bin) {
+                            Ok(_) => {
+                                let output = std::process::Command::new(&bin).args(&args).output();
+                                match output {
+                                    Ok(out) => {
+                                        let exit_code = out.status.code().unwrap_or(-1);
+                                        ok = exit_code == 0;
+                                        payload_json = Some(json!({
+                                            "status": if ok { "success" } else { "error" },
+                                            "stdout": String::from_utf8_lossy(&out.stdout).to_string(),
+                                            "stderr": String::from_utf8_lossy(&out.stderr).to_string(),
+                                            "exitCode": exit_code
+                                        }));
+                                    }
+                                    Err(e) => {
+                                        error_json = Some(json!({"code":"SYSTEM_RUN_FAILED","message": e.to_string()}));
+                                    }
+                                }
+                            }
+                            Err(e) => {
+                                error_json = Some(json!({"code":"SYSTEM_RUN_DENIED","message": e.to_string()}));
+                            }
+                        }
+                    }
+                }
+                "system.which" => {
+                    let parsed = params_json
+                        .as_ref()
+                        .and_then(|s| serde_json::from_str::<serde_json::Value>(s).ok())
+                        .unwrap_or_else(|| json!({}));
+
+                    let bins: Vec<String> = parsed["bins"]
+                        .as_array()
+                        .map(|a| a.iter().filter_map(|i| i.as_str().map(String::from)).collect())
+                        .unwrap_or_default();
+
+                    let mut found: serde_json::Map<String, serde_json::Value> = serde_json::Map::new();
+                    for b in bins {
+                        let exists = std::process::Command::new("sh")
+                            .arg("-lc")
+                            .arg(format!("command -v {}", b))
+                            .output()
+                            .map(|o| o.status.success())
+                            .unwrap_or(false);
+                        found.insert(b, json!(exists));
+                    }
+
+                    ok = true;
+                    payload_json = Some(json!({ "bins": found }));
+                }
+                "system.execApprovals.get" => {
+                    ok = true;
+                    payload_json = Some(json!({"message":"not_implemented_in_zeroclaw_yet"}));
+                }
+                "system.execApprovals.set" => {
+                    ok = true;
+                    payload_json = Some(json!({"message":"not_implemented_in_zeroclaw_yet"}));
+                }
+                _ => {
+                    error_json = Some(json!({"code":"UNAVAILABLE","message":"command not supported"}));
+                }
+            }
+
+            let result_req = json!({
+                "type": "req",
+                "id": uuid::Uuid::new_v4().to_string(),
+                "method": "node.invoke.result",
+                "params": {
+                    "id": invoke_id,
+                    "nodeId": node_id,
+                    "ok": ok,
+                    "payloadJSON": payload_json.as_ref().map(|p| p.to_string()),
+                    "error": error_json
+                }
+            });
+
+            let _ = tx.send(Message::Text(result_req.to_string().into()));
         } else if v["type"] == "req" {
             let method = v["method"].as_str().unwrap_or("");
             let req_id = v["id"].as_str().unwrap_or("").to_string();
@@ -408,18 +529,113 @@ impl WsClient {
 
                 let _ = tx.send(Message::Text(res.to_string().into()));
             } else if method == "nodes.invoke" {
-                println!("Handling nodes.invoke: {}", text);
-                
-                let res = json!({
-                    "type": "res",
-                    "id": req_id,
-                    "ok": true,
-                    "payload": {
-                        "status": "success",
-                        "result": "Invoked successfully"
-                    }
+                println!("Handling legacy nodes.invoke: {}", text);
+
+                let command = v["params"]["command"].as_str().unwrap_or("");
+                let params_json = v["params"]["paramsJSON"].as_str().map(|s| s.to_string()).or_else(|| {
+                    v["params"].get("params").map(|p| p.to_string())
                 });
-                let _ = tx.send(Message::Text(res.to_string().into()));
+
+                if command == "system.which" {
+                    let parsed = params_json
+                        .as_ref()
+                        .and_then(|s| serde_json::from_str::<serde_json::Value>(s).ok())
+                        .unwrap_or_else(|| json!({}));
+                    let bins: Vec<String> = parsed["bins"]
+                        .as_array()
+                        .map(|a| a.iter().filter_map(|i| i.as_str().map(String::from)).collect())
+                        .unwrap_or_default();
+
+                    let mut found: serde_json::Map<String, serde_json::Value> = serde_json::Map::new();
+                    for b in bins {
+                        let exists = std::process::Command::new("sh")
+                            .arg("-lc")
+                            .arg(format!("command -v {}", b))
+                            .output()
+                            .map(|o| o.status.success())
+                            .unwrap_or(false);
+                        found.insert(b, json!(exists));
+                    }
+
+                    let res = json!({
+                        "type": "res",
+                        "id": req_id,
+                        "ok": true,
+                        "payload": {
+                            "bins": found
+                        }
+                    });
+                    let _ = tx.send(Message::Text(res.to_string().into()));
+                } else if command == "system.run" {
+                    let parsed = params_json
+                        .as_ref()
+                        .and_then(|s| serde_json::from_str::<serde_json::Value>(s).ok())
+                        .unwrap_or_else(|| json!({}));
+
+                    let argv: Vec<String> = parsed["command"]
+                        .as_array()
+                        .map(|a| a.iter().filter_map(|i| i.as_str().map(String::from)).collect())
+                        .unwrap_or_default();
+
+                    if argv.is_empty() {
+                        let res = json!({
+                            "type": "res",
+                            "id": req_id,
+                            "ok": false,
+                            "error": {"code":"INVALID_REQUEST","message":"command required"}
+                        });
+                        let _ = tx.send(Message::Text(res.to_string().into()));
+                    } else {
+                        let bin = argv[0].clone();
+                        let args = argv[1..].to_vec();
+                        match self.sandbox.validate_command(&bin) {
+                            Ok(_) => {
+                                match std::process::Command::new(&bin).args(&args).output() {
+                                    Ok(out) => {
+                                        let code = out.status.code().unwrap_or(-1);
+                                        let res = json!({
+                                            "type": "res",
+                                            "id": req_id,
+                                            "ok": code == 0,
+                                            "payload": {
+                                                "stdout": String::from_utf8_lossy(&out.stdout).to_string(),
+                                                "stderr": String::from_utf8_lossy(&out.stderr).to_string(),
+                                                "exitCode": code
+                                            }
+                                        });
+                                        let _ = tx.send(Message::Text(res.to_string().into()));
+                                    }
+                                    Err(e) => {
+                                        let res = json!({
+                                            "type": "res",
+                                            "id": req_id,
+                                            "ok": false,
+                                            "error": {"code":"SYSTEM_RUN_FAILED","message": e.to_string()}
+                                        });
+                                        let _ = tx.send(Message::Text(res.to_string().into()));
+                                    }
+                                }
+                            }
+                            Err(e) => {
+                                let res = json!({
+                                    "type": "res",
+                                    "id": req_id,
+                                    "ok": false,
+                                    "error": {"code":"SYSTEM_RUN_DENIED","message": e.to_string()}
+                                });
+                                let _ = tx.send(Message::Text(res.to_string().into()));
+                            }
+                        }
+                    }
+                } else {
+                    let res = json!({
+                        "type": "res",
+                        "id": req_id,
+                        "ok": false,
+                        "error": {"code":"UNAVAILABLE","message":"command not supported"}
+                    });
+                    let _ = tx.send(Message::Text(res.to_string().into()));
+                }
             } else if method == "nodes.stats" {
                 let uptime_sec = self.startup_time.elapsed().unwrap_or(std::time::Duration::from_secs(0)).as_secs();
                 let jobs_ok = self.jobs_ok.load(Ordering::Relaxed);
